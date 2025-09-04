@@ -20,9 +20,9 @@ A Python GUI application for managing Zoom user assistants using OAuth device fl
    - Fill in the required information
    - In "App Credentials", note your Client ID and Client Secret
    - In "Redirect URL for OAuth", add: `http://localhost:8080/callback`
-   - In "Scopes", add: `user:read`, `user:write`
+   - In "Scopes", add: `user:read:list_assistants:admin`, `user:write:assistant:admin`, `user:read:user:admin`
 
-2. **Configure the App (Optional):**
+2. **Configure the App:**
 
    ```bash
    cp config_template.py config.py
@@ -40,8 +40,13 @@ A Python GUI application for managing Zoom user assistants using OAuth device fl
    **Manual Way:**
 
    ```bash
-   # Install dependencies first
+   # Create and activate a virtual environment
+   python3 -m venv .venv
+   source .venv/bin/activate
+
+   # Install dependencies
    pip install -r requirements.txt
+
    # Then run the app
    python zoom_assistant_manager.py
    ```
@@ -50,7 +55,7 @@ A Python GUI application for managing Zoom user assistants using OAuth device fl
 
 1. **Authentication:**
 
-   - Enter your Zoom App's Client ID and Client Secret
+   - Ensure your Zoom App's Client ID and Client Secret are set in `config.py`
    - Click "Authenticate" button
    - A browser window will open for device flow authentication
    - Follow the instructions to complete authentication
@@ -70,9 +75,12 @@ A Python GUI application for managing Zoom user assistants using OAuth device fl
 
 ## API Endpoints Used
 
+- `POST /oauth/devicecode` - Start device flow authentication
+- `POST /oauth/token` - Obtain access token via device flow
 - `GET /users/me` - Get authenticated user info
-- `GET /users/{email}` - Get user info by email
-- `PATCH /users/{userId}/assistants` - Add assistants to a user
+- `GET /users/{email}` - Get info about any user by email
+- `GET /users/{userId}/assistants` - List assistants for a user
+- `POST /users/{userId}/assistants` - Add assistants to a user
 
 ## Requirements
 
@@ -80,6 +88,7 @@ A Python GUI application for managing Zoom user assistants using OAuth device fl
 - tkinter (usually included with Python)
 - requests
 - Valid Zoom OAuth app credentials
+- (Recommended) Run via `launch_app.sh` to auto-create a virtual environment and install dependencies
 
 ## Notes
 
