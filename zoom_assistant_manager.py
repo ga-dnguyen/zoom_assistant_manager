@@ -123,13 +123,16 @@ class ZoomAssistantManager:
         # Authentication section
         auth_frame = ttk.LabelFrame(main_frame, text="Authentication", padding="5")
         auth_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
-        auth_frame.columnconfigure(1, weight=1)
+        auth_frame.columnconfigure(2, weight=1)
         
         self.auth_button = ttk.Button(auth_frame, text="Authenticate", command=self.authenticate)
         self.auth_button.grid(row=0, column=0, padx=(0, 10))
         
+        self.configure_button = ttk.Button(auth_frame, text="Configure", command=self.show_config_modal)
+        self.configure_button.grid(row=0, column=1, padx=(0, 10))
+        
         self.auth_status_label = ttk.Label(auth_frame, text="Not authenticated", foreground="red")
-        self.auth_status_label.grid(row=0, column=1, sticky=(tk.W,))
+        self.auth_status_label.grid(row=0, column=2, sticky=(tk.W,))
         
         # User input section
         input_frame = ttk.LabelFrame(main_frame, text="User Management", padding="5")
@@ -181,10 +184,102 @@ class ZoomAssistantManager:
         """Clear the log text area"""
         self.log_text.delete(1.0, tk.END)
         
+    def show_config_modal(self):
+        """Show configuration modal for CLIENT_ID and CLIENT_SECRET"""
+        # Create modal window
+        config_window = tk.Toplevel(self.root)
+        config_window.title("Configuration")
+        config_window.geometry("400x200")
+        config_window.transient(self.root)
+        config_window.grab_set()
+        
+        # Center the window
+        config_window.update_idletasks()
+        x = (config_window.winfo_screenwidth() // 2) - (400 // 2)
+        y = (config_window.winfo_screenheight() // 2) - (200 // 2)
+        config_window.geometry(f"400x200+{x}+{y}")
+        
+        # Main frame
+        main_frame = ttk.Frame(config_window, padding="20")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        config_window.columnconfigure(0, weight=1)
+        config_window.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+        
+        # CLIENT_ID field
+        ttk.Label(main_frame, text="Client ID:").grid(row=0, column=0, sticky=(tk.W,), padx=(0, 10), pady=(0, 10))
+        client_id_entry = ttk.Entry(main_frame, width=30)
+        client_id_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=(0, 10))
+        client_id_entry.insert(0, self.client_id)
+        
+        # CLIENT_SECRET field
+        ttk.Label(main_frame, text="Client Secret:").grid(row=1, column=0, sticky=(tk.W,), padx=(0, 10), pady=(0, 20))
+        client_secret_entry = ttk.Entry(main_frame, width=30, show="*")
+        client_secret_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=(0, 20))
+        client_secret_entry.insert(0, self.client_secret)
+        
+        # Buttons frame
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.grid(row=2, column=0, columnspan=2, pady=(10, 0))
+        
+        def save_config():
+            """Save configuration and close modal"""
+            new_client_id = client_id_entry.get().strip()
+            new_client_secret = client_secret_entry.get().strip()
+            
+            if not new_client_id or not new_client_secret:
+                messagebox.showerror("Error", "Both Client ID and Client Secret are required")
+                return
+            
+            if self.save_config_to_file(new_client_id, new_client_secret):
+                self.client_id = new_client_id
+                self.client_secret = new_client_secret
+                self.log_message("Configuration saved successfully")
+                config_window.destroy()
+            else:
+                messagebox.showerror("Error", "Failed to save configuration")
+        
+        def cancel_config():
+            """Close modal without saving"""
+            config_window.destroy()
+        
+        # Save button
+        ttk.Button(buttons_frame, text="Save", command=save_config).grid(row=0, column=0, padx=(0, 10))
+        
+        # Cancel button
+        ttk.Button(buttons_frame, text="Cancel", command=cancel_config).grid(row=0, column=1)
+        
+        # Focus on first field
+        client_id_entry.focus()
+        
+    def save_config_to_file(self, client_id, client_secret):
+        """Save CLIENT_ID and CLIENT_SECRET to config.py file"""
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            config_file_path = os.path.join(current_dir, "config.py")
+            
+            config_content = f"""# Zoom Assistant Manager Configuration Template
+# Copy this file to config.py and fill in your actual values
+
+# Zoom OAuth App Credentials
+# Get these from your Zoom App in the Zoom Marketplace
+CLIENT_ID = "{client_id}"
+CLIENT_SECRET = "{client_secret}"
+
+"""
+            
+            with open(config_file_path, 'w') as f:
+                f.write(config_content)
+            
+            return True
+        except Exception as e:
+            print(f"Error saving config: {e}")
+            return False
+        
     def authenticate(self):
         """Start the OAuth device flow authentication"""        
         if not self.client_id or not self.client_secret:
-            messagebox.showerror("Error", "Please configure Client ID and Client Secret in config.py file")
+            messagebox.showerror("Error", "Please configure Client ID and Client Secret using the Configure button")
             return
             
         self.log_message("Starting OAuth device flow authentication...")
